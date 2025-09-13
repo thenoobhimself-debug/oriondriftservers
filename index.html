@@ -48,8 +48,7 @@
   <div id="lastUpdated"></div>
 
   <script>
-    const API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlfaWQiOiI3ZTljM2EzYy1mNmJkLTQ1MjAtOTlkMi1lYzY2ZWIwNGIwMjEiLCJrZXlfdHlwZSI6InNlcnZpY2UiLCJvd25lcl9pZCI6Ijc3MDI1NzAxMDMxMjU2MTMiLCJjcmVhdGVkX2F0IjoiMjAyNS0wOS0xMyAwNDo1NTo0OC40NTA1MDkifQ.nXDD1sLPY0mJtIVdF4mXHQQL4POs5iKDOIFSfxGgcPI"; // replace with your real key
-    const ENDPOINT = "https://a2-station-api-prod-708695367983.us-central1.run.app/v2/stations";
+    const API_URL = "http://localhost:3000/stations"; // Call your proxy server instead
     let refreshTimer;
 
     async function fetchStations() {
@@ -61,19 +60,13 @@
       resultsDiv.innerHTML = "<p>Loading...</p>";
 
       try {
-        let url = ENDPOINT;
-        let allStations = [];
-        const seen = new Set();
+        const res = await fetch(API_URL);
+        if (!res.ok) throw new Error("API error " + res.status);
+        const data = await res.json();
+        if (!data.items && !Array.isArray(data)) throw new Error("Invalid API response");
 
-        while (url && !seen.has(url)) {
-          seen.add(url);
-          const res = await fetch(url, { headers: { "x-api-key": API_KEY } });
-          if (!res.ok) throw new Error("API error " + res.status);
-          const data = await res.json();
-          if (!data.items) break;
-          allStations.push(...data.items);
-          url = data.next_page_url;
-        }
+        // Handle both array and object-based responses
+        const allStations = Array.isArray(data) ? data : data.items || [];
 
         const stations = allStations.filter(s =>
           s.fleet_id === fleet &&
