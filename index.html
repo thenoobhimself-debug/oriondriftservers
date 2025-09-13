@@ -18,6 +18,13 @@
 <body>
   <h1>🚀 Orion Drift VR - Stations</h1>
 
+  <!-- ✅ New checkbox added here -->
+  <label>
+    <input type="checkbox" id="showUsernames">
+    Show player usernames
+  </label>
+  <br><br>
+
   <label>Region:
     <select id="region">
       <option value="us-east-2">NA</option>
@@ -57,6 +64,7 @@
       const fleet = document.getElementById("fleet").value;
       const resultsDiv = document.getElementById("results");
       const lastUpdated = document.getElementById("lastUpdated");
+      const showUsernames = document.getElementById("showUsernames").checked;
 
       resultsDiv.innerHTML = "<p>Loading...</p>";
 
@@ -92,6 +100,9 @@
           <div class="station-card">
             <h3>🚀 ${s.station_name}</h3>
             <p><b>Players:</b> ${s.player_count || 0}</p>
+            ${showUsernames && s.players ? `
+              <ul>${s.players.map(p => `<li>${p.username}</li>`).join("")}</ul>
+            ` : ""}
           </div>
         `).join("");
 
@@ -106,6 +117,9 @@
       fetchStations();
       refreshTimer = setInterval(fetchStations, 30000); // refresh every 30s
     }
+
+    // ✅ Checkbox re-fetches data on change
+    document.getElementById("showUsernames").addEventListener("change", fetchStations);
 
     // Start refreshing as soon as page loads
     window.onload = startAutoRefresh;
