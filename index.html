@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Orion Drift VR - Stations</title>
+  <style>
+    body { font-family: Arial, sans-serif; background:#0a0a14; color:#f0f0f0; padding:20px; }
+    h1 { color:#8a2be2; }
+    select, button { padding:8px; margin:6px; border-radius:6px; }
+    .station-card {
+      background:#151524; padding:12px; margin:10px 0;
+      border-radius:8px; border:1px solid #2a2a3a;
+    }
+    .station-card h3 { margin:0 0 6px; color:#56d364; }
+    #lastUpdated { font-size: 0.9em; color: #aaa; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h1>🚀 Orion Drift VR - Stations</h1>
+
+  <label>Region:
+    <select id="region">
+      <option value="us-east-2">NA</option>
+      <option value="eu-central-1">EU</option>
+      <option value="ap-southeast-2">OCE</option>
+    </select>
+  </label>
+
+  <label>Fleet:
+    <select id="fleet">
+      <option value="8a976a05-ca53-4946-962a-e1def410ec54">Core</option>
+      <option value="7085995a-b9d1-46de-b31b-5028d7775b6e">Rookie</option>
+      <option value="8a976a05-ca53-4946-962a-e1def410ec54">Clubhouse</option>
+      <option value="e696ee24-e6fb-45ce-a6bf-e225d15ca9b9">Freerunners</option>
+      <option value="af10d53d-af7c-42f4-9745-80fe77256d7b">Passers Club</option>
+      <option value="ac9a3a81-d1b4-4387-b093-4d834c7c3688">Grown Ups Club</option>
+      <option value="ed81909d-9878-4a75-ad67-62d034fe46d2">Golf Club</option>
+      <option value="debdecb5-fd7e-4f6f-9389-84fcfdc65c8d">Scrims</option>
+      <option value="9979c160-34c4-49b8-8cf1-4dbbffc21a62">VRML(4V4)</option>
+      <option value="9ae0a8e6-4981-4820-b78b-6239430d5f75">Rainbow Drifters</option>
+      <option value="da03e9d6-aa70-4be2-81cc-081ab7acee4f">Girls Who Drift</option>
+    </select>
+  </label>
+
+  <button onclick="fetchStations()">Fetch Stations</button>
+
+  <div id="results"></div>
+  <div id="lastUpdated"></div>
+
+  <script>
+    const API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZXlfaWQiOiI3ZTljM2EzYy1mNmJkLTQ1MjAtOTlkMi1lYzY2ZWIwNGIwMjEiLCJrZXlfdHlwZSI6InNlcnZpY2UiLCJvd25lcl9pZCI6Ijc3MDI1NzAxMDMxMjU2MTMiLCJjcmVhdGVkX2F0IjoiMjAyNS0wOS0xMyAwNDo1NTo0OC40NTA1MDkifQ.nXDD1sLPY0mJtIVdF4mXHQQL4POs5iKDOIFSfxGgcPI"; // replace with your real key
+    const ENDPOINT = "https://a2-station-api-prod-708695367983.us-central1.run.app/v2/stations";
+    let refreshTimer;
+
+    async function fetchStations() {
+      const region = document.getElementById("region").value;
+      const fleet = document.getElementById("fleet").value;
+      const resultsDiv = document.getElementById("results");
+      const lastUpdated = document.getElementById("lastUpdated");
+
+      resultsDiv.innerHTML = "<p>Loading...</p>";
+
+      try {
+        let url = ENDPOINT;
+        let allStations = [];
+        const seen = new Set();
+
+        while (url && !seen.has(url)) {
+          seen.add(url);
+          const res = await fetch(url, { headers: { "x-api-key": API_KEY } });
+          if (!res.ok) throw new Error("API error " + res.status);
+          const data = await res.json();
+          if (!data.items) break;
+          allStations.push(...data.items);
+          url = data.next_page_url;
+        }
+
+        const stations = allStations.filter(s =>
+          s.fleet_id === fleet &&
+          s.region === region &&
+          !s.station_name.toLowerCase().startsWith("4v4")
+        );
+
+        if (!stations.length) {
+          resultsDiv.innerHTML = `<p>⚠️ No stations found for this fleet/region.</p>`;
+          return;
+        }
+
+        stations.sort((a, b) => (b.player_count || 0) - (a.player_count || 0));
+
+        resultsDiv.innerHTML = stations.slice(0, 15).map(s => `
+          <div class="station-card">
+            <h3>🚀 ${s.station_name}</h3>
+            <p><b>Players:</b> ${s.player_count || 0}</p>
+          </div>
+        `).join("");
+
+        lastUpdated.textContent = "⏱ Last updated: " + new Date().toLocaleTimeString();
+      } catch (err) {
+        resultsDiv.innerHTML = `<p style="color:red;">Error: ${err.message}</p>`;
+      }
+    }
+
+    function startAutoRefresh() {
+      clearInterval(refreshTimer);
+      fetchStations();
+      refreshTimer = setInterval(fetchStations, 30000); // refresh every 30s
+    }
+
+    // Start refreshing as soon as page loads
+    window.onload = startAutoRefresh;
+  </script>
+</body>
+</html>
