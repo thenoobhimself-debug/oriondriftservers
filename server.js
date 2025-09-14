@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 const cors = require('cors');
+const API_URL = "https://your-deployed-server.com/stations";
 
 const app = express();
 const PORT = 3000;
@@ -32,3 +33,4 @@ app.get('/stations', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ Proxy server running on http://localhost:${PORT}`);
 });
+
